@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
@@ -10,38 +11,42 @@ namespace ServiceMonitor
 {
     class Program
     {
-        static readonly string _serviceName = ConfigurationManager.AppSettings["serviceName"];
-        static readonly int _startTimeout = int.Parse(ConfigurationManager.AppSettings["startTimeout"]);
+        static IEnumerable<string> _serviceList;
+        static readonly int _serviceStartTimeout = int.Parse(ConfigurationManager.AppSettings["serviceStartTimeout"]);
         static readonly ScheduleService _scheduleService = new ScheduleService();
 
         static void Main(string[] args)
         {
-            _scheduleService.ScheduleTask("MonitorServiceAlive", MonitorServiceStatus, 1000, 1000);
-            Console.WriteLine("Service monitor started, monitoring service '{0}'. Press any key to exit.", _serviceName);
+            _serviceList = ConfigurationManager.AppSettings["serviceList"].Split(',');
+            _scheduleService.ScheduleTask("MonitorServiceStatus", MonitorServiceStatus, 1000, 1000);
+            Console.WriteLine("Service monitor started, press any key to exit.");
             Console.ReadLine();
         }
 
         static void MonitorServiceStatus()
         {
-            var serviceRunning = Process.GetProcessesByName(_serviceName).Count() > 0;
-            if (!serviceRunning)
+            foreach (var service in _serviceList)
             {
-                Console.WriteLine("'{0}' is stopped, try to restart it.", _serviceName);
-                RestartService();
+                var serviceRunning = Process.GetProcessesByName(service).Count() > 0;
+                if (!serviceRunning)
+                {
+                    Console.WriteLine("'{0}' is stopped, try to restart it.", service);
+                    RestartService(service);
+                }
             }
         }
-        static void RestartService()
+        static void RestartService(string service)
         {
             try
             {
-                var serviceController = new ServiceController(_serviceName);
+                var serviceController = new ServiceController(service);
                 serviceController.Start();
-                serviceController.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromMilliseconds(_startTimeout));
-                Console.WriteLine("'{0}' restart successfully.", _serviceName);
+                serviceController.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromMilliseconds(_serviceStartTimeout));
+                Console.WriteLine("'{0}' restart successfully.", service);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Restart service '{0}' failed, exception:{1}", _serviceName, ex);
+                Console.WriteLine("Restart service '{0}' failed, exception:{1}", service, ex);
             }
         }
     }
