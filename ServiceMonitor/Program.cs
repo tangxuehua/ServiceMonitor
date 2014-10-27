@@ -12,14 +12,15 @@ namespace ServiceMonitor
     class Program
     {
         static IEnumerable<string> _serviceList;
+        static readonly int _detectPeriod = int.Parse(ConfigurationManager.AppSettings["detectPeriod"]);
         static readonly int _serviceStartTimeout = int.Parse(ConfigurationManager.AppSettings["serviceStartTimeout"]);
         static readonly ScheduleService _scheduleService = new ScheduleService();
 
         static void Main(string[] args)
         {
             _serviceList = ConfigurationManager.AppSettings["serviceList"].Split(',');
-            _scheduleService.ScheduleTask("MonitorServiceStatus", MonitorServiceStatus, 1000, 1000);
-            Console.WriteLine("Service monitor started, press any key to exit.");
+            _scheduleService.ScheduleTask("MonitorServiceStatus", MonitorServiceStatus, _detectPeriod, _detectPeriod);
+            Console.WriteLine("{0} - Service monitor started, press any key to exit.", DateTime.Now);
             Console.ReadLine();
         }
 
@@ -30,7 +31,7 @@ namespace ServiceMonitor
                 var serviceRunning = Process.GetProcessesByName(service).Count() > 0;
                 if (!serviceRunning)
                 {
-                    Console.WriteLine("'{0}' is stopped, try to restart it.", service);
+                    Console.WriteLine("{0} - '{1}' is stopped, try to restart it.", DateTime.Now, service);
                     RestartService(service);
                 }
             }
@@ -42,11 +43,11 @@ namespace ServiceMonitor
                 var serviceController = new ServiceController(service);
                 serviceController.Start();
                 serviceController.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromMilliseconds(_serviceStartTimeout));
-                Console.WriteLine("'{0}' restart successfully.", service);
+                Console.WriteLine("{0} - '{1}' restart successfully.", DateTime.Now, service);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Restart service '{0}' failed, exception:{1}", service, ex);
+                Console.WriteLine("{0} - Restart service '{1}' failed, exception:{1}", DateTime.Now, service, ex);
             }
         }
     }
