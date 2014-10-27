@@ -20,7 +20,7 @@ namespace ServiceMonitor
         {
             _serviceList = ConfigurationManager.AppSettings["serviceList"].Split(',');
             _scheduleService.ScheduleTask("MonitorServiceStatus", MonitorServiceStatus, _detectPeriod, _detectPeriod);
-            Console.WriteLine("{0} - Service monitor started, press any key to exit.", DateTime.Now);
+            Console.WriteLine("{0} - Service monitor started, press any key to exit.", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
             Console.ReadLine();
         }
 
@@ -31,7 +31,7 @@ namespace ServiceMonitor
                 var serviceRunning = Process.GetProcessesByName(service).Count() > 0;
                 if (!serviceRunning)
                 {
-                    Console.WriteLine("{0} - '{1}' is stopped, try to restart it.", DateTime.Now, service);
+                    Console.WriteLine("{0} - '{1}' is stopped, try to restart it.", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), service);
                     RestartService(service);
                 }
             }
@@ -43,11 +43,11 @@ namespace ServiceMonitor
                 var serviceController = new ServiceController(service);
                 serviceController.Start();
                 serviceController.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromMilliseconds(_serviceStartTimeout));
-                Console.WriteLine("{0} - '{1}' restart successfully.", DateTime.Now, service);
+                Console.WriteLine("{0} - '{1}' restart successfully.", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), service);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("{0} - Restart service '{1}' failed, exception:{1}", DateTime.Now, service, ex);
+                Console.WriteLine("{0} - Restart service '{1}' failed, exception:{1}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), service, ex);
             }
         }
     }
